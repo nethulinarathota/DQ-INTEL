@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DQ·INTEL — Data Quality Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:#f5f3ef;--bg-card:#ffffff;--bg-sunken:#ede9e3;
+  --ink:#1a1612;--ink-2:#4a4540;--ink-3:#9a9590;--ink-4:#bdb7ae;
+  --rule:#dbd6cf;--rule-2:#d0c9c0;
+  --nav:rgba(245,243,239,0.92);
+  --green:#1a6641;--amber:#b45309;--red:#991b1b;--blue:#1d4ed8;
+  --green-bg:#dcfce7;--amber-bg:#fef3c7;--red-bg:#fee2e2;--blue-bg:#dbeafe;
+  --font-body:'Geist',sans-serif;--font-mono:'Geist Mono',monospace;--font-serif:'Instrument Serif',serif;
+  --radius:10px;
+}
+
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--rule);border-radius:3px}
+
+/* ── UPLOAD SCREEN ── */
+#upload-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:2rem;position:relative;overflow:hidden}
+#upload-screen::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(26,22,18,.04) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(26,22,18,.03) 0%,transparent 50%);pointer-events:none}
+
+.upload-nav{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;background:var(--nav);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);z-index:200}
+.wordmark{font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.15em;color:var(--ink)}
+
+.upload-body{position:relative;z-index:1;text-align:center;max-width:560px;width:100%;margin-top:52px;padding-top:3.5rem}
+.upload-wordmark{font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase;margin-bottom:3rem;display:flex;align-items:center;gap:.6rem;justify-content:center}
+.upload-wordmark span{width:5px;height:5px;background:var(--ink);border-radius:50%;display:inline-block}
+.upload-headline{font-family:var(--font-serif);font-size:clamp(2.8rem,6vw,5rem);font-weight:400;letter-spacing:-.02em;line-height:1.05;color:var(--ink);text-align:center;margin-bottom:1rem;max-width:700px}
+.upload-headline em{font-style:italic;color:var(--ink-2)}
+.upload-sub{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);margin-bottom:2.5rem;letter-spacing:.04em}
+
+.drop-zone{width:100%;max-width:480px;margin:0 auto;border:1.5px dashed var(--rule);border-radius:16px;padding:3.5rem 2rem;text-align:center;cursor:pointer;background:var(--bg-card);transition:all .2s;position:relative;overflow:hidden}
+.drop-zone::before{content:'';position:absolute;inset:0;background:var(--ink);opacity:0;transition:opacity .2s;border-radius:14px}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--ink);border-style:solid}
+.drop-zone:hover::before,.drop-zone.dragover::before{opacity:.025}
+.drop-icon{width:52px;height:52px;background:var(--bg-sunken);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:1.25rem;transition:transform .2s;position:relative;z-index:1}
+.drop-zone:hover .drop-icon{transform:scale(1.05)}
+.drop-title{font-weight:500;font-size:15px;color:var(--ink);margin-bottom:.35rem;position:relative;z-index:1}
+.drop-sub{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);position:relative;z-index:1}
+
+.pill-row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:2.5rem}
+.pill{font-family:var(--font-mono);font-size:10.5px;padding:.3rem .8rem;border-radius:20px;border:1px solid var(--rule);color:var(--ink-2);background:var(--bg-card);letter-spacing:.03em}
+
+/* ── DASHBOARD SHELL ── */
+#dashboard{display:none;min-height:100vh}
+.dash-hdr{height:52px;border-bottom:1px solid var(--rule);background:var(--nav);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:200}
+.hdr-l{display:flex;align-items:center;gap:1.25rem}
+.hdr-div{width:1px;height:18px;background:var(--rule)}
+.hdr-meta{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+.hdr-meta strong{color:var(--ink-2);font-weight:500}
+.hdr-r{display:flex;align-items:center;gap:.6rem}
+.btn-reset{font-family:var(--font-mono);font-size:11px;color:var(--bg-card);background:var(--ink);border:none;border-radius:6px;padding:.4rem 1rem;cursor:pointer;transition:opacity .15s;letter-spacing:.04em;font-weight:500}
+.btn-reset:hover{opacity:.8}
+.btn-export{font-family:var(--font-mono);font-size:11px;color:var(--ink-2);background:none;border:1px solid var(--rule);border-radius:6px;padding:.35rem .8rem;cursor:pointer;transition:all .15s;letter-spacing:.03em;display:flex;align-items:center;gap:.4rem}
+.btn-export:hover{background:var(--bg-sunken);border-color:var(--ink-3)}
+
+/* ── SCORE BANNER ── */
+.score-banner{background:var(--ink);padding:1.75rem 1.5rem}
+.sb-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.score-big{font-family:var(--font-serif);font-size:5rem;line-height:.85;font-weight:400;letter-spacing:-.03em;color:#f5f3ef}
+.score-lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,243,239,.4);margin-top:.5rem}
+.score-badge{display:inline-block;margin-top:.4rem;padding:2px 9px;border-radius:4px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;font-weight:600}
+.sf{font-family:var(--font-mono);font-size:10px;color:rgba(245,243,239,.35);padding:.75rem 1rem;border:1px solid rgba(245,243,239,.1);border-radius:8px;flex-shrink:0;line-height:1.9}
+.sf .eq{color:rgba(245,243,239,.7)}.sf .res{color:rgba(245,243,239,.9)}
+.dim-cards{display:flex;gap:.75rem;flex:1;flex-wrap:wrap}
+.dim-card{flex:1 1 110px;min-width:100px;background:rgba(245,243,239,.06);border:1px solid rgba(245,243,239,.1);border-radius:var(--radius);padding:.9rem 1rem}
+.dc-lbl{font-family:var(--font-mono);font-size:9.5px;color:rgba(245,243,239,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
+.dc-lbl span{opacity:.5}
+.dc-score{font-family:var(--font-serif);font-size:2.5rem;line-height:1;font-weight:400}
+.dc-bar{height:2px;background:rgba(245,243,239,.1);border-radius:2px;margin-top:.5rem;overflow:hidden}
+.dc-fill{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)}
+.dc-desc{font-family:var(--font-mono);font-size:9px;color:rgba(245,243,239,.25);margin-top:.3rem}
+
+/* ── TABS ── */
+.tabs-bar{border-bottom:1px solid var(--rule);background:var(--bg-card);padding:0 1.5rem;display:flex;overflow-x:auto;position:sticky;top:52px;z-index:100}
+.tab-btn{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);background:none;border:none;border-bottom:2px solid transparent;padding:.85rem 1.1rem;cursor:pointer;white-space:nowrap;transition:all .15s;letter-spacing:.06em;display:flex;align-items:center;gap:.4rem}
+.tab-btn:hover{color:var(--ink-2)}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink)}
+.t-badge{background:var(--red);color:#fff;border-radius:10px;padding:1px 5px;font-size:9px;font-weight:600}
+.dash-content{max-width:1100px;margin:0 auto;padding:1.75rem 1.5rem;animation:fadeUp .3s ease forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── COMMON ── */
+.card{background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden}
+.card-hdr{padding:.9rem 1.25rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)}
+.card-body{padding:1.1rem 1.25rem}
+.btn-link{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:0;transition:color .12s;letter-spacing:.04em}
+.btn-link:hover{color:var(--ink)}
+.sec-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.75rem}
+.note-box{background:var(--bg-sunken);border:1px solid var(--rule);border-radius:var(--radius);padding:.9rem 1.1rem;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);line-height:1.65}
+.note-box strong{color:var(--ink-2);font-weight:500}
+.mb1{margin-bottom:.75rem}.mb15{margin-bottom:1.25rem}.mb2{margin-bottom:1.75rem}
+.g1{display:grid;gap:.75rem}.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--ink-3)}
+.empty-icon{font-size:2.5rem;margin-bottom:.75rem}
+.empty-title{font-family:var(--font-serif);font-size:18px;font-weight:400;color:var(--ink-2);margin-bottom:.4rem}
+.empty-sub{font-family:var(--font-mono);font-size:11px}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem}
+.stat-chip{background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--radius);padding:1rem 1.1rem}
+.si{font-size:15px;color:var(--ink-3);margin-bottom:.6rem}
+.sv{font-family:var(--font-serif);font-size:2rem;line-height:1;color:var(--ink);font-weight:400}
+.ss{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:1px}
+.sl{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:4px;letter-spacing:.04em;text-transform:uppercase}
+
+/* ── TABLE ── */
+.dtable{width:100%;border-collapse:collapse;font-size:12px}
+.dtable thead tr{border-bottom:1px solid var(--rule)}
+.dtable th{padding:.55rem 1rem;text-align:left;font-family:var(--font-mono);font-size:10px;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;font-weight:500;white-space:nowrap}
+.dtable td{padding:.55rem 1rem;border-bottom:1px solid #f0ece6;vertical-align:middle}
+.dtable tbody tr:last-child td{border-bottom:none}
+.dtable tbody tr:hover td{background:var(--bg-sunken);cursor:pointer}
+.type-badge{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
+.type-badge.numeric{background:#ede9ff;color:#5b21b6}
+.type-badge.date{background:#ccfbf1;color:#0f766e}
+.type-badge.categorical{background:var(--amber-bg);color:var(--amber)}
+.type-badge.unknown{background:var(--bg-sunken);color:var(--ink-3)}
+.hdot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.mini-track{width:64px;height:4px;background:var(--bg-sunken);border-radius:2px;display:inline-block;overflow:hidden}
+.mini-fill{height:100%;border-radius:2px}
+
+/* ── SPARKLINE ── */
+.spark{display:flex;align-items:flex-end;gap:1px;height:28px;margin-top:6px}
+.spark-bar{background:var(--ink);opacity:.2;border-radius:1px 1px 0 0;flex:1;min-width:3px;transition:opacity .15s}
+.spark-bar:hover{opacity:.5}
+
+/* ── ISSUES TAB ── */
+.miss-row{display:flex;align-items:center;gap:.75rem;padding:.45rem .5rem;border-radius:6px;margin-bottom:2px;cursor:pointer;transition:background .12s}
+.miss-row:hover,.miss-row.sel{background:var(--bg-sunken)}
+.miss-name{width:130px;font-family:var(--font-mono);font-size:11px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.miss-bar{flex:1;height:14px;background:var(--bg-sunken);border-radius:3px;overflow:hidden;position:relative}
+.miss-fill{height:100%;border-radius:3px}
+.miss-ok{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);position:absolute;inset:0;display:flex;align-items:center;padding-left:6px}
+.miss-pct{font-family:var(--font-mono);font-size:11px;width:38px;text-align:right;flex-shrink:0}
+.outlier-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem .5rem;border-radius:6px;cursor:pointer;margin-bottom:2px;transition:background .12s}
+.outlier-row:hover,.outlier-row.sel{background:var(--bg-sunken)}
+.oc{font-family:var(--font-serif);font-size:1.6rem;font-weight:400;line-height:1}
+
+/* ── COL DETAIL ── */
+.col-detail{background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--radius);padding:1.25rem}
+.cd-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--rule)}
+.cd-name{font-size:14px;font-weight:600;color:var(--ink)}
+.btn-close{background:none;border:none;cursor:pointer;color:var(--ink-3);font-size:15px;transition:color .12s}
+.btn-close:hover{color:var(--ink)}
+.mstat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem}
+.mstat{background:var(--bg-sunken);border-radius:7px;padding:.6rem .75rem}
+.msl{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em}
+.msv{font-size:13px;font-weight:500;color:var(--ink);margin-top:2px}
+.stat-row{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #f0ece6;font-size:12px}
+.stat-row:last-child{border-bottom:none}
+.sk{font-family:var(--font-mono);color:var(--ink-3)}.svv{color:var(--ink-2);font-weight:500}
+.tv-row{display:flex;align-items:center;gap:.5rem;margin-bottom:5px}
+.tv-name{font-family:var(--font-mono);font-size:11px;color:var(--ink-2);width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tv-track{flex:1;height:6px;background:var(--bg-sunken);border-radius:2px;overflow:hidden}
+.tv-fill{height:100%;background:var(--ink);border-radius:2px;opacity:.25}
+.tv-ct{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);width:36px;text-align:right}
+
+/* ── ROOT CAUSE ── */
+.insight-card{background:var(--bg-card);border:1px solid var(--rule);border-left-width:3px;border-radius:var(--radius);padding:1.1rem 1.25rem}
+.insight-card.high{border-left-color:var(--red)}.insight-card.medium{border-left-color:var(--amber)}.insight-card.low{border-left-color:var(--green)}
+.ii{font-size:13px;margin-bottom:.4rem}
+.ii.high{color:var(--red)}.ii.medium{color:var(--amber)}.ii.low{color:var(--green)}
+.it{font-size:12.5px;font-weight:500;color:var(--ink);margin-bottom:.35rem;line-height:1.45}
+.id{font-size:11.5px;color:var(--ink-3);line-height:1.65}
+.hs-row{display:flex;align-items:center;gap:1rem;padding:.65rem 0;border-bottom:1px solid #f0ece6}
+.hs-row:last-child{border-bottom:none}
+.hs-rank{font-family:var(--font-serif);font-size:1.4rem;font-weight:400;width:28px;flex-shrink:0}
+.hs-wrap{flex:1}
+.hs-col{font-size:12px;color:var(--ink);font-weight:500;margin-bottom:4px}
+.hs-track{height:3px;background:var(--bg-sunken);border-radius:2px;overflow:hidden}
+.hs-fill{height:100%;border-radius:2px}
+.hs-score{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);white-space:nowrap;flex-shrink:0}
+
+/* ── CORRELATION HEATMAP ── */
+.corr-cell{width:100%;height:100%;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:500;cursor:default;transition:transform .1s}
+.corr-cell:hover{transform:scale(1.12);z-index:10;position:relative}
+.corr-wrap{overflow-x:auto}
+.corr-table{border-collapse:collapse}
+.corr-table td,.corr-table th{padding:2px}
+.corr-table th{font-family:var(--font-mono);font-size:9px;color:var(--ink-3);padding:2px 4px;white-space:nowrap;text-align:right}
+
+/* ── ML TAB ── */
+.ml-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+.ml-card{background:var(--bg-card);border:1px solid var(--rule);border-top-width:3px;border-radius:var(--radius);padding:1.5rem;text-align:center}
+.ml-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.6rem}
+.ml-r2{font-family:var(--font-serif);font-size:3.8rem;font-weight:400;line-height:1;letter-spacing:-.02em}
+.ml-sub{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:3px}
+.ml-bar-track{height:5px;background:var(--bg-sunken);border-radius:3px;margin:1rem 0 .6rem;overflow:hidden}
+.ml-bar-fill{height:100%;border-radius:3px}
+.ml-tag{font-family:var(--font-mono);font-size:10px;color:var(--ink-3)}
+.ml-impact{border:1px solid var(--rule);border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:1.25rem;background:var(--bg-card)}
+.mi-num{font-family:var(--font-serif);font-size:1.8rem;font-weight:400;line-height:1;margin-bottom:.35rem}
+.mi-txt{font-size:12px;color:var(--ink-3);line-height:1.65}
+.eff-row{display:flex;gap:1rem;padding:.55rem 0;border-bottom:1px solid #f0ece6;font-size:12px;align-items:flex-start}
+.eff-row:last-child{border-bottom:none}
+.eff-i{font-family:var(--font-mono);color:var(--ink-2);width:150px;flex-shrink:0;font-size:11px}
+.eff-d{color:var(--ink-3);line-height:1.55}
+
+/* ── RECS TAB ── */
+.rec-card{background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--radius);padding:1.1rem 1.25rem;display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:start}
+.rec-num{font-family:var(--font-serif);font-size:1.6rem;font-weight:400;color:var(--rule-2);line-height:1;padding-top:2px;width:30px}
+.rec-col-n{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.rec-badge{display:inline-block;font-family:var(--font-mono);font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-left:.4rem}
+.rb-h{background:var(--red-bg);color:var(--red)}
+.rb-m{background:var(--amber-bg);color:var(--amber)}
+.rb-l{background:var(--blue-bg);color:var(--blue)}
+.rec-issue{font-size:12px;color:var(--ink-3);margin-bottom:5px}
+.rec-strat{font-size:12px;color:var(--ink);font-weight:500;margin-bottom:4px}
+.rec-strat::before{content:'→ ';color:var(--ink-3)}
+.rec-reason{font-size:11px;color:var(--ink-3);line-height:1.55}
+.code-toggle{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:0;margin-top:6px;letter-spacing:.04em;transition:color .12s}
+.code-toggle:hover{color:var(--ink)}
+.code-block{display:none;background:var(--bg-sunken);border:1px solid var(--rule);border-radius:6px;padding:.75rem 1rem;margin-top:.5rem;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-2);line-height:1.7;white-space:pre;overflow-x:auto}
+.code-block.open{display:block}
+
+/* ── CUSTOM RULES ── */
+.rule-form{background:var(--bg-sunken);border:1px solid var(--rule);border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:.75rem}
+.rule-form select,.rule-form input{background:var(--bg-card);border:1px solid var(--rule-2);border-radius:6px;padding:.45rem .75rem;font-family:var(--font-mono);font-size:11px;color:var(--ink);outline:none;transition:border-color .15s}
+.rule-form select:focus,.rule-form input:focus{border-color:var(--ink-2)}
+.rule-form label{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:.3rem}
+.btn-action{font-family:var(--font-mono);font-size:11px;background:var(--ink);color:var(--bg-card);border:none;border-radius:6px;padding:.45rem 1rem;cursor:pointer;letter-spacing:.06em;font-weight:500;transition:opacity .15s}
+.btn-action:hover{opacity:.8}
+.rule-result{font-family:var(--font-mono);font-size:11px;padding:.5rem .75rem;border-radius:6px;margin-top:.5rem}
+.rule-pass{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bg)}
+.rule-fail{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bg)}
+
+/* ── SCHEMA DRIFT ── */
+.drift-upload{border:1.5px dashed var(--rule-2);border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;background:var(--bg-card);transition:all .2s}
+.drift-upload:hover{border-color:var(--ink)}
+.diff-row{display:flex;gap:1rem;padding:.55rem 0;border-bottom:1px solid #f0ece6;font-size:12px;align-items:center}
+.diff-row:last-child{border-bottom:none}
+.diff-col{font-family:var(--font-mono);font-size:11px;color:var(--ink-2);width:160px;flex-shrink:0}
+.diff-chip{font-family:var(--font-mono);font-size:9.5px;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.diff-added{background:var(--green-bg);color:var(--green)}
+.diff-removed{background:var(--red-bg);color:var(--red)}
+.diff-changed{background:var(--amber-bg);color:var(--amber)}
+.diff-ok{background:var(--bg-sunken);color:var(--ink-3)}
+
+/* ── AI AGENT ── */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 260px);min-height:400px;background:var(--bg-card);border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden}
+.chat-msgs{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:.75rem}
+.msg{max-width:80%;padding:.8rem 1rem;border-radius:10px;font-size:12.5px;line-height:1.65}
+.msg.user{align-self:flex-end;background:var(--ink);color:#f5f3ef;border-radius:10px 10px 2px 10px;font-weight:500}
+.msg.ai{align-self:flex-start;background:var(--bg-sunken);color:var(--ink-2);border-radius:10px 10px 10px 2px;border:1px solid var(--rule)}
+.msg.ai.thinking{color:var(--ink-3);font-style:italic;font-family:var(--font-mono);font-size:11px}
+.chat-input-wrap{border-top:1px solid var(--rule);padding:.75rem 1rem;display:flex;gap:.5rem;background:var(--bg-card)}
+.chat-input{flex:1;background:var(--bg-sunken);border:1px solid var(--rule);border-radius:8px;padding:.6rem 1rem;font-family:var(--font-body);font-size:12px;color:var(--ink);outline:none;resize:none;transition:border-color .15s}
+.chat-input:focus{border-color:var(--ink-2)}
+.btn-send{background:var(--ink);color:#f5f3ef;border:none;border-radius:8px;padding:.6rem 1rem;cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:500;transition:opacity .15s;flex-shrink:0}
+.btn-send:hover{opacity:.8}
+.btn-send:disabled{opacity:.4;cursor:not-allowed}
+.chat-suggestions{padding:.75rem 1.25rem;border-bottom:1px solid var(--rule);display:flex;gap:.5rem;flex-wrap:wrap;background:var(--bg-sunken)}
+.sug-btn{font-family:var(--font-mono);font-size:10px;padding:.3rem .75rem;border-radius:20px;border:1px solid var(--rule);color:var(--ink-3);background:var(--bg-card);cursor:pointer;transition:all .15s;letter-spacing:.03em}
+.sug-btn:hover{border-color:var(--ink);color:var(--ink)}
+
+@media(max-width:640px){
+  .g2,.ml-grid{grid-template-columns:1fr}
+  .sb-inner{flex-direction:column}
+  .dim-cards{flex-direction:column}
+  .stat-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ UPLOAD ══════════ -->
+<div id="upload-screen">
+  <nav class="upload-nav">
+    <span class="wordmark">DQ·INTEL</span>
+  </nav>
+  <div class="upload-body">
+    <div class="upload-wordmark"><span></span>Data Quality Intelligence</div>
+    <h1 class="upload-headline">Is your dataset<br><em>trustworthy?</em></h1>
+    <p class="upload-sub">Upload a CSV · get scored · understand why · act on it</p>
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon" id="drop-icon">📊</div>
+      <div class="drop-title" id="drop-title">Drop your CSV file here</div>
+      <div class="drop-sub" id="drop-sub">or click to browse · up to 1 GB</div>
+      <input type="file" id="file-input" accept=".csv" style="display:none">
+    </div>
+    <div class="pill-row">
+      <span class="pill">Completeness 30%</span>
+      <span class="pill">Consistency 25%</span>
+      <span class="pill">Validity 25%</span>
+      <span class="pill">Uniqueness 20%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="dashboard">
+  <div class="dash-hdr">
+    <div class="hdr-l">
+      <span class="wordmark">DQ·INTEL</span>
+      <div class="hdr-div"></div>
+      <span class="hdr-meta">📄 <strong id="hdr-file">—</strong> · <span id="hdr-dims">—</span></span>
+    </div>
+    <div class="hdr-r">
+      <button class="btn-export" onclick="exportReport()">⬇ Export</button>
+      <button class="btn-reset" onclick="resetApp()">↩ Reset</button>
+    </div>
+  </div>
+
+  <div class="score-banner">
+    <div class="sb-inner">
+      <div>
+        <div class="score-big" id="sb-score">—</div>
+        <div class="score-lbl">Overall DQS</div>
+        <div class="score-badge" id="sb-badge">—</div>
+      </div>
+      <div class="sf" id="sb-formula">—</div>
+      <div class="dim-cards" id="dim-cards"></div>
+    </div>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" data-tab="issues" onclick="switchTab('issues')">Issues</button>
+    <button class="tab-btn" data-tab="rootcause" onclick="switchTab('rootcause')">Root Cause</button>
+    <button class="tab-btn" data-tab="corr" onclick="switchTab('corr')">Correlations</button>
+    <button class="tab-btn" data-tab="ml" onclick="switchTab('ml')">ML Impact</button>
+    <button class="tab-btn" data-tab="recs" onclick="switchTab('recs')">
+      Recommendations <span class="t-badge" id="recs-badge" style="display:none">0</span>
+    </button>
+    <button class="tab-btn" data-tab="rules" onclick="switchTab('rules')">Custom Rules</button>
+    <button class="tab-btn" data-tab="drift" onclick="switchTab('drift')">Schema Drift</button>
+    <button class="tab-btn" data-tab="agent" onclick="switchTab('agent')">✦ AI Agent</button>
+  </div>
+
+  <div id="tab-overview"  class="dash-content"></div>
+  <div id="tab-issues"    class="dash-content" style="display:none"></div>
+  <div id="tab-rootcause" class="dash-content" style="display:none"></div>
+  <div id="tab-corr"      class="dash-content" style="display:none"></div>
+  <div id="tab-ml"        class="dash-content" style="display:none"></div>
+  <div id="tab-recs"      class="dash-content" style="display:none"></div>
+  <div id="tab-rules"     class="dash-content" style="display:none"></div>
+  <div id="tab-drift"     class="dash-content" style="display:none"></div>
+  <div id="tab-agent"     class="dash-content" style="display:none"></div>
+</div>
+
+<script>
+/* ══════════ CSV PARSING ══════════ */
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/);
+  if(lines.length<2)return{headers:[],rows:[]};
+  const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+  const rows=lines.slice(1).map(line=>{
+    const vals=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;continue}
+      if(c===','&&!inQ){vals.push(cur.trim());cur='';continue}
+      cur+=c;
+    }
+    vals.push(cur.trim());
+    const obj={};
+    headers.forEach((h,i)=>{obj[h]=vals[i]??'';});
+    return obj;
+  });
+  return{headers,rows};
+}
+
+const MISS=new Set(['','null','na','n/a','nan','none','undefined','nil','missing','?']);
+function isMiss(v){return v==null||MISS.has(String(v).toLowerCase().trim())}
+
+function inferType(vals){
+  const ok=vals.filter(v=>!isMiss(v));
+  if(!ok.length)return'unknown';
+  if(ok.filter(v=>!isNaN(Number(v))&&v!=='').length/ok.length>0.8)return'numeric';
+  if(ok.filter(v=>!isNaN(Date.parse(v))).length/ok.length>0.7)return'date';
+  return'categorical';
+}
+
+function getStats(vals,type){
+  const nums=vals.map(Number).filter(v=>!isNaN(v));
+  if(type!=='numeric'||!nums.length)return{};
+  const s=[...nums].sort((a,b)=>a-b);
+  const mean=nums.reduce((a,b)=>a+b,0)/nums.length;
+  const median=s.length%2===0?(s[s.length/2-1]+s[s.length/2])/2:s[Math.floor(s.length/2)];
+  const q1=s[Math.floor(s.length*0.25)],q3=s[Math.floor(s.length*0.75)];
+  const iqr=q3-q1,lower=q1-1.5*iqr,upper=q3+1.5*iqr;
+  const outliers=nums.filter(v=>v<lower||v>upper);
+  const variance=nums.reduce((a,b)=>a+(b-mean)**2,0)/nums.length;
+  const bins=buildHistogram(nums,s[0],s[s.length-1],12);
+  return{mean,median,q1,q3,min:s[0],max:s[s.length-1],std:Math.sqrt(variance),outliers,lower,upper,bins};
+}
+
+function buildHistogram(nums,min,max,n){
+  if(min===max)return[{lo:min,hi:max,count:nums.length}];
+  const w=(max-min)/n,bins=[];
+  for(let i=0;i<n;i++)bins.push({lo:min+i*w,hi:min+(i+1)*w,count:0});
+  nums.forEach(v=>{let i=Math.floor((v-min)/w);if(i<0)i=0;if(i>=n)i=n-1;bins[i].count++;});
+  return bins;
+}
+
+/* ══════════ ANALYSIS ══════════ */
+function sampleArr(arr,n){
+  const step=Math.max(1,Math.floor(arr.length/n));
+  const res=[];for(let i=0;i<arr.length&&res.length<n;i+=step)res.push(arr[i]);
+  return res;
+}
+
+function analyzeDataset(headers,rows){
+  const sample=rows.length>50000?sampleArr(rows,50000):rows;
+  let totMiss=0,totIncon=0,totInval=0;
+  const total=headers.length*sample.length;
+
+  const columns=headers.map(col=>{
+    const values=sample.map(r=>r[col]);
+    const missing=values.filter(isMiss).length;
+    const nonMiss=values.filter(v=>!isMiss(v));
+    const type=inferType(nonMiss);
+    const stats=getStats(nonMiss,type);
+    const inconsistent=type==='numeric'?nonMiss.filter(v=>isNaN(Number(v))).length:nonMiss.filter(v=>v!==v.trim()).length;
+    const invalid=type==='numeric'&&stats.outliers?stats.outliers.length:0;
+    const freq={};nonMiss.forEach(v=>{freq[v]=(freq[v]||0)+1;});
+    const topValues=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    totMiss+=missing;totIncon+=inconsistent;totInval+=invalid;
+    return{col,type,missing,missingPct:(missing/sample.length)*100,nonMissing:nonMiss.length,inconsistent,invalid,stats,topValues,values};
+  });
+
+  const seen=new Set();let dupes=0;
+  sample.forEach(r=>{const k=JSON.stringify(r);if(seen.has(k))dupes++;else seen.add(k);});
+  const dupesEst=Math.round(dupes*(rows.length/sample.length));
+
+  const C=100*(1-totMiss/total);
+  const Co=total?100*(1-totIncon/total):100;
+  const V=total?100*(1-totInval/total):100;
+  const U=100*(1-dupes/sample.length);
+  const DQS=0.30*C+0.25*Co+0.25*V+0.20*U;
+
+  const hotspots=columns.map(c=>({col:c.col,impact:c.missingPct*0.3+(c.invalid/sample.length)*25+(c.inconsistent/sample.length)*25})).sort((a,b)=>b.impact-a.impact).slice(0,3);
+
+  const numCols=columns.filter(c=>c.type==='numeric');
+  const corrMatrix=buildCorrMatrix(numCols,sample);
+
+  return{columns,dupes:dupesEst,C,Co,V,U,DQS,hotspots,totMiss,total,sampleSize:sample.length,corrMatrix,numColNames:numCols.map(c=>c.col)};
+}
+
+function pearson(a,b){
+  const n=a.length;
+  const ma=a.reduce((s,v)=>s+v,0)/n,mb=b.reduce((s,v)=>s+v,0)/n;
+  let num=0,da=0,db=0;
+  for(let i=0;i<n;i++){const dA=a[i]-ma,dB=b[i]-mb;num+=dA*dB;da+=dA*dA;db+=dB*dB;}
+  return(da&&db)?num/Math.sqrt(da*db):0;
+}
+
+function buildCorrMatrix(numCols,rows){
+  const vecs=numCols.map(c=>rows.map(r=>Number(r[c.col])).filter(v=>!isNaN(v)));
+  const n=numCols.length;const matrix=[];
+  for(let i=0;i<n;i++){matrix[i]=[];for(let j=0;j<n;j++){
+    const minLen=Math.min(vecs[i].length,vecs[j].length);
+    matrix[i][j]=i===j?1:pearson(vecs[i].slice(0,minLen),vecs[j].slice(0,minLen));
+  }}
+  return matrix;
+}
+
+function simulateML(columns,rows){
+  const numCols=columns.filter(c=>c.type==='numeric');
+  if(numCols.length<2)return null;
+  const target=numCols[numCols.length-1],feature=numCols[0];
+  const pairs=rows.map(r=>[Number(r[feature.col]),Number(r[target.col])]).filter(([x,y])=>!isNaN(x)&&!isNaN(y));
+  const cleanPairs=pairs.filter(([x])=>{const s=feature.stats;return s.lower!==undefined?x>=s.lower&&x<=s.upper:true;});
+  function r2(p){
+    if(p.length<3)return 0;
+    const ym=p.reduce((a,[,y])=>a+y,0)/p.length,st=p.reduce((a,[,y])=>a+(y-ym)**2,0);
+    const xm=p.reduce((a,[x])=>a+x,0)/p.length;
+    const num=p.reduce((a,[x,y])=>a+(x-xm)*(y-ym),0);
+    const den=Math.sqrt(p.reduce((a,[x])=>a+(x-xm)**2,0)*st);
+    return den?Math.min(Math.max((num/den)**2,0),1):0;
+  }
+  const rawR2=r2(pairs),cleanR2=r2(cleanPairs);
+  return{feature:feature.col,target:target.col,rawR2:(rawR2*100).toFixed(1),cleanR2:(cleanR2*100).toFixed(1),improvement:((cleanR2-rawR2)*100).toFixed(1),rawCount:pairs.length,cleanCount:cleanPairs.length};
+}
+
+function generateRecs(columns,dupes,totalRows){
+  const recs=[];
+  columns.forEach(c=>{
+    if(c.missingPct>30)recs.push({col:c.col,issue:`High missing values (${c.missingPct.toFixed(1)}%)`,impact:'High',strategy:c.type==='numeric'?'Median imputation':'Mode imputation or drop column',reason:c.type==='numeric'?'Median is robust to outliers and preserves distribution shape.':'Most frequent value preserves categorical distribution.',code:c.type==='numeric'?`df['${c.col}'].fillna(df['${c.col}'].median(), inplace=True)`:`df['${c.col}'].fillna(df['${c.col}'].mode()[0], inplace=True)`});
+    else if(c.missingPct>5)recs.push({col:c.col,issue:`Moderate missing values (${c.missingPct.toFixed(1)}%)`,impact:'Medium',strategy:c.type==='numeric'?'Mean or median imputation':'Mode imputation',reason:'Low enough to impute without distorting overall distribution.',code:`df['${c.col}'].fillna(df['${c.col}'].median(), inplace=True)`});
+    if(c.invalid>0&&c.type==='numeric')recs.push({col:c.col,issue:`${c.invalid} outlier(s) detected (IQR 1.5× rule)`,impact:c.invalid>5?'High':'Medium',strategy:'Cap outliers at IQR bounds (Winsorization) or remove rows',reason:'Extreme values destabilize model training and skew statistical summaries.',code:`Q1=df['${c.col}'].quantile(0.25)\nQ3=df['${c.col}'].quantile(0.75)\nIQR=Q3-Q1\ndf['${c.col}']=df['${c.col}'].clip(lower=Q1-1.5*IQR, upper=Q3+1.5*IQR)`});
+    if(c.inconsistent>0)recs.push({col:c.col,issue:`${c.inconsistent} whitespace/formatting inconsistencies`,impact:'Low',strategy:'Strip whitespace and normalize case',reason:'Inconsistent formatting creates artificial category splits in groupby operations.',code:`df['${c.col}']=df['${c.col}'].str.strip().str.lower()`});
+  });
+  if(dupes>0)recs.push({col:'All columns',issue:`~${dupes.toLocaleString()} duplicate rows found`,impact:dupes>totalRows*0.05?'High':'Medium',strategy:'Drop duplicates, keep first occurrence',reason:'Duplicates inflate sample size and bias evaluation metrics.',code:`df.drop_duplicates(keep='first', inplace=True)`});
+  return recs;
+}
+
+/* ══════════ HELPERS ══════════ */
+function sc(s){return s>=80?'#16a34a':s>=60?'#b45309':'#991b1b'}
+function sl(s){return s>=80?'Good':s>=60?'Moderate':'Poor'}
+function mc(p){return p>30?'#dc2626':p>10?'#d97706':'#16a34a'}
+function fmt(n,d=2){return typeof n==='number'?n.toFixed(d):'—'}
+function scBan(s){return s>=80?'#86efac':s>=60?'#fcd34d':'#fca5a5'}
+function scBadgeStyle(s){
+  if(s>=80)return{bg:'rgba(134,239,172,.15)',color:'#86efac',border:'rgba(134,239,172,.3)'};
+  if(s>=60)return{bg:'rgba(253,211,77,.15)',color:'#fcd34d',border:'rgba(253,211,77,.3)'};
+  return{bg:'rgba(252,165,165,.15)',color:'#fca5a5',border:'rgba(252,165,165,.3)'};
+}
+
+function sparkHTML(bins){
+  if(!bins||!bins.length)return'';
+  const mx=Math.max(...bins.map(b=>b.count));
+  return`<div class="spark">${bins.map(b=>{const h=Math.max(2,Math.round((b.count/mx)*100));return`<div class="spark-bar" style="height:${h}%" title="${b.lo.toFixed(1)}–${b.hi.toFixed(1)}: ${b.count}"></div>`}).join('')}</div>`;
+}
+
+/* ══════════ STATE ══════════ */
+let D=null,A=null,ML=null,RC=[],selCol=null,chatHistory=[],aiThinking=false;
+
+/* ══════════ UPLOAD ══════════ */
+const dz=document.getElementById('drop-zone');
+const fi=document.getElementById('file-input');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.name.endsWith('.csv'))processFile(f);});
+fi.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);});
+
+function setDropState(icon,title,sub){
+  document.getElementById('drop-icon').textContent=icon;
+  document.getElementById('drop-title').textContent=title;
+  document.getElementById('drop-sub').textContent=sub;
+}
+
+function processFile(file){
+  setDropState('⏳','Analysing…','This may take a moment for large files');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    setTimeout(()=>{
+      const{headers,rows}=parseCSV(e.target.result);
+      if(!headers.length||!rows.length){alert('Could not parse CSV — check it has headers and data.');setDropState('📊','Drop your CSV file here','or click to browse · up to 1 GB');return;}
+      D={headers,rows,fileName:file.name,totalRows:rows.length};
+      A=analyzeDataset(headers,rows);
+      ML=simulateML(A.columns,rows.length>50000?sampleArr(rows,50000):rows);
+      RC=generateRecs(A.columns,A.dupes,rows.length);
+      chatHistory=[];
+      renderDashboard();
+      document.getElementById('upload-screen').style.display='none';
+      document.getElementById('dashboard').style.display='block';
+      switchTab('overview');
+    },50);
+  };
+  reader.readAsText(file);
+}
+
+function resetApp(){
+  D=A=ML=null;RC=[];selCol=null;chatHistory=[];
+  fi.value='';
+  setDropState('📊','Drop your CSV file here','or click to browse · up to 1 GB');
+  document.getElementById('upload-screen').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+}
+
+/* ══════════ RENDER DASHBOARD ══════════ */
+function renderDashboard(){
+  const{DQS,C,Co,V,U}=A;
+  document.getElementById('hdr-file').textContent=D.fileName;
+  document.getElementById('hdr-dims').textContent=`${D.totalRows.toLocaleString()} rows · ${D.headers.length} cols`;
+  document.getElementById('sb-score').textContent=DQS.toFixed(0);
+
+  const bs=scBadgeStyle(DQS);
+  const badge=document.getElementById('sb-badge');
+  badge.textContent=sl(DQS);
+  badge.style.cssText=`display:inline-block;margin-top:.4rem;padding:2px 9px;border-radius:4px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;font-weight:600;background:${bs.bg};color:${bs.color};border:1px solid ${bs.border}`;
+
+  document.getElementById('sb-formula').innerHTML=`<div style="opacity:.5;margin-bottom:2px">DQS = 0.30·C + 0.25·Co + 0.25·V + 0.20·U</div><div class="eq">= 0.30·${C.toFixed(0)} + 0.25·${Co.toFixed(0)} + 0.25·${V.toFixed(0)} + 0.20·${U.toFixed(0)}</div><div class="res">= ${DQS.toFixed(2)}</div>`;
+
+  const dims=[{l:'Completeness',s:C,w:'30%',d:'Missing values'},{l:'Consistency',s:Co,w:'25%',d:'Format issues'},{l:'Validity',s:V,w:'25%',d:'Outliers / rules'},{l:'Uniqueness',s:U,w:'20%',d:'Duplicates'}];
+  document.getElementById('dim-cards').innerHTML=dims.map(d=>`<div class="dim-card"><div class="dc-lbl">${d.l} <span>${d.w}</span></div><div class="dc-score" style="color:${scBan(d.s)}">${d.s.toFixed(0)}</div><div class="dc-bar"><div class="dc-fill" style="width:${d.s}%;background:${scBan(d.s)}"></div></div><div class="dc-desc">${d.d}</div></div>`).join('');
+
+  const rb=document.getElementById('recs-badge');rb.textContent=RC.length;rb.style.display=RC.length?'inline':'none';
+  renderOverview();renderIssues();renderRootCause();renderCorr();renderML();renderRecs();renderRules();renderDrift();renderAgent();
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  ['overview','issues','rootcause','corr','ml','recs','rules','drift','agent'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    el.style.display=t===tab?'block':'none';
+    if(t===tab){el.style.animation='none';requestAnimationFrame(()=>{el.style.animation=''});}
+  });
+  if(tab==='corr')renderCorr();
+}
+
+/* ══════════ OVERVIEW ══════════ */
+function renderOverview(){
+  const{columns,dupes,totMiss,total,sampleSize}=A;
+  const{totalRows,headers}=D;
+  const mc2=columns.filter(c=>c.missingPct>0).length,oc=columns.filter(c=>c.invalid>0).length;
+  const stats=[
+    {l:'Total Rows',v:totalRows.toLocaleString(),icon:'▦'},
+    {l:'Columns',v:headers.length,icon:'▤'},
+    {l:'Missing Cells',v:totMiss.toLocaleString(),icon:'◻',s:`${((totMiss/total)*100).toFixed(1)}% of sample`},
+    {l:'Duplicate Rows',v:'~'+dupes.toLocaleString(),icon:'⧉',s:`est. ${((dupes/totalRows)*100).toFixed(2)}%`},
+    {l:'Cols w/ Outliers',v:oc,icon:'◈'},
+    {l:'Cols w/ Missing',v:mc2,icon:'◻'},
+  ];
+  const note=totalRows>50000?`<div class="note-box mb15"><strong>ⓘ Large dataset —</strong> Analysis performed on a representative sample of ${sampleSize.toLocaleString()} rows. Scores and estimates reflect full dataset patterns.</div>`:'';
+  document.getElementById('tab-overview').innerHTML=`
+    ${note}
+    <div class="stat-grid mb2">${stats.map(s=>`<div class="stat-chip"><div class="si">${s.icon}</div><div class="sv">${s.v}</div>${s.s?`<div class="ss">${s.s}</div>`:''}<div class="sl">${s.l}</div></div>`).join('')}</div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Schema &amp; Column Summary</span><button class="btn-link" onclick="switchTab('issues')">View detail →</button></div>
+      <div style="overflow-x:auto">
+        <table class="dtable">
+          <thead><tr><th>Column</th><th>Type</th><th>Missing %</th><th>Distribution</th><th>Outliers</th><th>Top Value</th><th>Health</th></tr></thead>
+          <tbody>${columns.map(c=>{
+            const hp=c.missingPct>30||c.invalid>3?'#dc2626':c.missingPct>10||c.invalid>0?'#d97706':'#16a34a';
+            return`<tr onclick="switchTab('issues')">
+              <td style="font-weight:500">${c.col}</td>
+              <td><span class="type-badge ${c.type}">${c.type}</span></td>
+              <td><div style="display:flex;align-items:center;gap:6px"><div class="mini-track"><div class="mini-fill" style="width:${Math.min(c.missingPct,100)}%;background:${mc(c.missingPct)}"></div></div><span style="font-family:var(--font-mono);font-size:11px;color:${mc(c.missingPct)}">${c.missingPct.toFixed(1)}%</span></div></td>
+              <td>${c.type==='numeric'&&c.stats.bins?sparkHTML(c.stats.bins):`<span style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3)">—</span>`}</td>
+              <td style="font-family:var(--font-mono);font-size:11px;color:${c.invalid>0?'#d97706':'var(--ink-3)'}">${c.invalid>0?c.invalid+' ⚠':'—'}</td>
+              <td style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.topValues[0]?.[0]||'—'}</td>
+              <td><span class="hdot" style="background:${hp}"></span></td>
+            </tr>`;}).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+/* ══════════ ISSUES ══════════ */
+function renderIssues(){rebuildIssues()}
+function rebuildIssues(){
+  const{columns}=A;
+  const numCols=columns.filter(c=>c.type==='numeric');
+  const col=selCol?columns.find(c=>c.col===selCol):null;
+  const missHtml=columns.map(c=>`<div class="miss-row ${selCol===c.col?'sel':''}" onclick="selColumn('${esc(c.col)}')"><div class="miss-name">${c.col}</div><div class="miss-bar">${c.missingPct===0?`<div class="miss-ok">✓ complete</div>`:`<div class="miss-fill" style="width:${c.missingPct}%;background:${mc(c.missingPct)}"></div>`}</div><div class="miss-pct" style="color:${c.missingPct>30?'#dc2626':c.missingPct>10?'#d97706':'var(--ink-3)'}">${c.missingPct.toFixed(1)}%</div></div>`).join('');
+  const outHtml=numCols.length?numCols.map(c=>`<div class="outlier-row ${selCol===c.col?'sel':''}" onclick="selColumn('${esc(c.col)}')"><div><div style="font-size:12px;font-weight:500;color:var(--ink)">${c.col}</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:2px">IQR [${fmt(c.stats.lower)}, ${fmt(c.stats.upper)}] · mean ${fmt(c.stats.mean)}</div>${c.stats.bins?sparkHTML(c.stats.bins):''}</div><div style="text-align:right"><div class="oc" style="color:${c.invalid>0?'#d97706':'var(--ink-3)'}">${c.invalid}</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3)">outliers</div></div></div>`).join(''):`<div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3)">No numeric columns detected.</div>`;
+  const detailHtml=col?`<div class="col-detail"><div class="cd-hdr"><span class="cd-name">${col.col}</span><button class="btn-close" onclick="selColumn(null)">✕</button></div><div class="mstat-grid"><div class="mstat"><div class="msl">Type</div><div class="msv">${col.type}</div></div><div class="mstat"><div class="msl">Non-missing</div><div class="msv">${col.nonMissing.toLocaleString()}</div></div><div class="mstat"><div class="msl">Missing</div><div class="msv">${col.missing} (${col.missingPct.toFixed(1)}%)</div></div><div class="mstat"><div class="msl">Outliers</div><div class="msv">${col.invalid}</div></div></div>${col.type==='numeric'&&col.stats.mean!==undefined?`<div class="sec-lbl mb1">Distribution</div>${sparkHTML(col.stats.bins)}<div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:4px;margin-bottom:1rem">min ${fmt(col.stats.min)} · max ${fmt(col.stats.max)} · mean ${fmt(col.stats.mean)}</div><div class="sec-lbl mb1">Statistics</div><div class="mb15">${[['Min',col.stats.min],['Max',col.stats.max],['Mean',col.stats.mean],['Median',col.stats.median],['Std Dev',col.stats.std],['Q1',col.stats.q1],['Q3',col.stats.q3]].map(([k,v])=>`<div class="stat-row"><span class="sk">${k}</span><span class="svv">${fmt(v,3)}</span></div>`).join('')}</div>`:''}<div class="sec-lbl mb1">Top Values</div>${col.topValues.map(([v,ct])=>`<div class="tv-row"><div class="tv-name">${v||'(empty)'}</div><div class="tv-track"><div class="tv-fill" style="width:${(ct/Math.max(col.nonMissing,1))*100}%"></div></div><div class="tv-ct">${ct.toLocaleString()}</div></div>`).join('')}</div>`:'';
+  document.getElementById('tab-issues').innerHTML=`<div style="display:grid;grid-template-columns:${col?'1fr 1fr':'1fr'};gap:1rem"><div><div class="card mb1"><div class="card-hdr"><span class="card-title">Missing Values by Column</span></div><div class="card-body">${missHtml}</div></div><div class="card"><div class="card-hdr"><span class="card-title">Outliers — IQR 1.5× Rule</span></div><div class="card-body">${outHtml}</div></div></div>${col?`<div>${detailHtml}</div>`:''}</div>`;
+}
+function selColumn(col){selCol=col;rebuildIssues()}
+function esc(s){return s.replace(/'/g,"\\'")}
+
+/* ══════════ ROOT CAUSE ══════════ */
+function renderRootCause(){
+  const{columns,dupes,hotspots}=A;const{rows}=D;
+  const missCols=columns.filter(c=>c.missingPct>0);const insights=[];
+  missCols.forEach(c=>{
+    if(c.missingPct>20){
+      const catC=columns.filter(cc=>cc.type==='categorical'&&cc.col!==c.col);
+      if(catC.length){
+        const gc=catC[0];const grps={};
+        const s2=rows.length>10000?sampleArr(rows,10000):rows;
+        s2.forEach(r=>{const g=r[gc.col]||'unknown';const m=isMiss(r[c.col]);if(!grps[g])grps[g]={total:0,missing:0};grps[g].total++;if(m)grps[g].missing++;});
+        const worst=Object.entries(grps).sort((a,b)=>(b[1].missing/b[1].total)-(a[1].missing/a[1].total))[0];
+        if(worst&&worst[1].missing>0)insights.push({sev:'high',icon:'◈',title:`Missing in "${c.col}" concentrated in "${gc.col}" = "${worst[0]}"`,detail:`${((worst[1].missing/worst[1].total)*100).toFixed(0)}% missing in that group vs ${c.missingPct.toFixed(0)}% overall — suggests a segment-specific data collection gap.`});
+      }
+    }
+  });
+  if(dupes>0)insights.push({sev:'medium',icon:'⧉',title:`~${dupes.toLocaleString()} duplicate rows detected`,detail:'May indicate repeated data entry, ETL pipeline issues, or merged datasets without deduplication.'});
+  const dateCols=columns.filter(c=>c.type==='date');const outC2=columns.filter(c=>c.invalid>0&&c.type==='numeric');
+  if(dateCols.length&&outC2.length)insights.push({sev:'medium',icon:'◎',title:`Outliers in "${outC2[0].col}" may be time-dependent`,detail:`Date column "${dateCols[0].col}" exists — cross-tab outliers with time periods to detect seasonal spikes or entry errors.`});
+  const highMiss=missCols.filter(c=>c.missingPct>40);
+  if(highMiss.length)insights.push({sev:'high',icon:'⚠',title:`${highMiss.length} column(s) exceed 40% missing`,detail:`Columns: ${highMiss.map(c=>c.col).join(', ')}. Consider whether these are optional fields or a systematic collection gap.`});
+  if(!insights.length)insights.push({sev:'low',icon:'✓',title:'No major issue patterns detected',detail:'Data appears reasonably structured. Review the Issues tab for column-level details.'});
+  document.getElementById('tab-rootcause').innerHTML=`<div class="sec-lbl mb1">Issue Patterns &amp; Potential Root Causes</div><div class="g2 mb2">${insights.map(i=>`<div class="insight-card ${i.sev}"><div class="ii ${i.sev}">${i.icon}</div><div class="it">${i.title}</div><div class="id">${i.detail}</div></div>`).join('')}</div><div class="card"><div class="card-hdr"><span class="card-title">Top Score Degraders</span></div><div class="card-body">${hotspots.map((h,i)=>`<div class="hs-row"><div class="hs-rank" style="color:${i===0?'#dc2626':i===1?'#d97706':'var(--rule-2)'}">#${i+1}</div><div class="hs-wrap"><div class="hs-col">${h.col}</div><div class="hs-track"><div class="hs-fill" style="width:${Math.min(h.impact,100)}%;background:${i===0?'#dc2626':i===1?'#d97706':'#3b82f6'}"></div></div></div><div class="hs-score">impact ${h.impact.toFixed(1)}</div></div>`).join('')}</div></div>`;
+}
+
+/* ══════════ CORRELATION HEATMAP ══════════ */
+function renderCorr(){
+  const{corrMatrix,numColNames}=A;
+  if(!numColNames.length||numColNames.length<2){
+    document.getElementById('tab-corr').innerHTML=`<div class="empty-state"><div class="empty-icon">⬡</div><div class="empty-title">No numeric columns to correlate</div><div class="empty-sub">Need at least 2 numeric columns</div></div>`;return;
+  }
+  const n=numColNames.length;
+  const abbr=name=>name.length>10?name.slice(0,9)+'…':name;
+  function corrColor(v){const a=Math.abs(v);return v>0?`rgba(26,102,65,${a})`:`rgba(153,27,27,${a})`;}
+  let tHtml=`<table class="corr-table"><thead><tr><th></th>${numColNames.map(n=>`<th title="${n}">${abbr(n)}</th>`).join('')}</tr></thead><tbody>`;
+  for(let i=0;i<n;i++){
+    tHtml+=`<tr><th style="text-align:left;padding-right:8px;white-space:nowrap" title="${numColNames[i]}">${abbr(numColNames[i])}</th>`;
+    for(let j=0;j<n;j++){
+      const v=corrMatrix[i][j];const pct=v.toFixed(2);
+      const txtColor=Math.abs(v)>0.5?'#fff':'var(--ink-2)';
+      tHtml+=`<td style="width:44px;height:34px"><div class="corr-cell" style="background:${corrColor(v)};color:${txtColor}" title="${numColNames[i]} × ${numColNames[j]}: ${pct}">${pct}</div></td>`;
+    }
+    tHtml+='</tr>';
+  }
+  tHtml+='</tbody></table>';
+  const strong=[];
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const v=corrMatrix[i][j];if(Math.abs(v)>0.5)strong.push({a:numColNames[i],b:numColNames[j],v});}
+  strong.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+  const strongHtml=strong.length?strong.slice(0,6).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:.55rem 0;border-bottom:1px solid #f0ece6;font-size:12px"><span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-2)">${s.a} × ${s.b}</span><span style="font-family:var(--font-mono);font-size:12px;font-weight:500;color:${s.v>0?'#16a34a':'#991b1b'}">${s.v>0?'+':''}${s.v.toFixed(3)}</span></div>`).join(''):`<div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3)">No strong correlations found (|r| > 0.5)</div>`;
+  document.getElementById('tab-corr').innerHTML=`
+    <div class="g2">
+      <div class="card"><div class="card-hdr"><span class="card-title">Pearson Correlation Matrix</span></div><div class="card-body corr-wrap">${tHtml}</div></div>
+      <div class="card"><div class="card-hdr"><span class="card-title">Strong Correlations (|r| &gt; 0.5)</span></div><div class="card-body"><div class="sec-lbl mb1">Sorted by absolute strength</div>${strongHtml}<div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:1rem">Green = positive · Red = negative · Values closer to ±1.0 indicate stronger linear relationships</div></div></div>
+    </div>`;
+}
+
+/* ══════════ ML TAB ══════════ */
+function renderML(){
+  if(!ML){document.getElementById('tab-ml').innerHTML=`<div class="empty-state"><div class="empty-icon">◎</div><div class="empty-title">At least 2 numeric columns required</div><div class="empty-sub">Upload a dataset with numeric features to see model performance comparison</div></div>`;return;}
+  const{rawR2,cleanR2,improvement,rawCount,cleanCount,feature,target}=ML;
+  const raw=parseFloat(rawR2),clean=parseFloat(cleanR2),imp=parseFloat(improvement);
+  document.getElementById('tab-ml').innerHTML=`
+    <div class="sec-lbl mb1">ML Performance Simulation</div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-bottom:1.25rem">Simple linear regression · feature: <strong style="color:var(--ink-2)">${feature}</strong> → target: <strong style="color:var(--ink-2)">${target}</strong></div>
+    <div class="ml-grid mb15">
+      <div class="ml-card" style="border-top-color:#dc2626"><div class="ml-lbl">Raw Dataset</div><div class="ml-r2" style="color:#dc2626">${rawR2}%</div><div class="ml-sub">R² score</div><div class="ml-bar-track"><div class="ml-bar-fill" style="width:${raw}%;background:#dc2626"></div></div><div class="ml-tag">Before cleaning · ${rawCount.toLocaleString()} rows</div></div>
+      <div class="ml-card" style="border-top-color:#16a34a"><div class="ml-lbl">Cleaned Dataset</div><div class="ml-r2" style="color:#16a34a">${cleanR2}%</div><div class="ml-sub">R² score</div><div class="ml-bar-track"><div class="ml-bar-fill" style="width:${clean}%;background:#16a34a"></div></div><div class="ml-tag">After outlier removal · ${cleanCount.toLocaleString()} rows</div></div>
+    </div>
+    <div class="ml-impact mb15"><div class="mi-num" style="color:${imp>0?'#16a34a':'#3b82f6'}">${imp>0?'+':''}${imp}% R² improvement</div><div class="mi-txt">${imp>0?`Data cleaning improved model fit by ${imp}%. Removing ${(rawCount-cleanCount).toLocaleString()} outlier rows let the regression capture the underlying signal more accurately.`:`Results are comparable between raw and cleaned data. The ${feature}→${target} relationship may be non-linear or require additional features.`}</div></div>
+    <div class="card"><div class="card-hdr"><span class="card-title">How Data Quality Affects ML Performance</span></div><div class="card-body">${[['Missing values','Force imputation or row dropping — both introduce bias or reduce training size'],['Outliers','Skew loss functions and gradient descent, leading to suboptimal model weights'],['Inconsistent formats','Cause encoding errors and incorrectly split categories'],['Duplicates','Inflate training performance metrics, masking true generalization ability']].map(([i,e])=>`<div class="eff-row"><span class="eff-i">${i}</span><span class="eff-d">${e}</span></div>`).join('')}<div style="font-family:var(--font-mono);font-size:10px;color:var(--ink-3);margin-top:.75rem;padding-top:.75rem;border-top:1px solid #f0ece6">ⓘ Uses simple linear regression (Pearson R²). Real-world impact depends on model type, task complexity, and dataset size.</div></div></div>`;
+}
+
+/* ══════════ RECOMMENDATIONS ══════════ */
+function renderRecs(){
+  if(!RC.length){document.getElementById('tab-recs').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-title" style="color:#16a34a">No major issues found</div><div class="empty-sub">Your dataset appears clean. Keep monitoring as data grows.</div></div>`;return;}
+  const sorted=[...RC].sort((a,b)=>({'High':3,'Medium':2,'Low':1}[b.impact]-{'High':3,'Medium':2,'Low':1}[a.impact]));
+  document.getElementById('tab-recs').innerHTML=`
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-bottom:1.25rem">${RC.length} issue(s) · prioritized by impact · click <strong style="color:var(--ink-2)">Python</strong> to see fix code</div>
+    <div class="g1 mb1">${sorted.map((r,i)=>`<div class="rec-card"><div class="rec-num">${i+1}</div><div><div><span class="rec-col-n">${r.col}</span><span class="rec-badge rb-${r.impact[0].toLowerCase()}">${r.impact}</span></div><div class="rec-issue">${r.issue}</div><div class="rec-strat">${r.strategy}</div><div class="rec-reason">${r.reason}</div>${r.code?`<button class="code-toggle" onclick="toggleCode(this)">⌥ Python fix</button><pre class="code-block">${r.code}</pre>`:''}</div></div>`).join('')}</div>
+    <div class="note-box"><strong>ⓘ Confidence note —</strong> Recommendations are based on statistical heuristics (IQR 1.5× for outliers, threshold-based missingness). Domain knowledge may warrant different strategies.</div>`;
+}
+function toggleCode(btn){const pre=btn.nextElementSibling;pre.classList.toggle('open');btn.textContent=pre.classList.contains('open')?'⌥ Hide code':'⌥ Python fix';}
+
+/* ══════════ CUSTOM RULES ══════════ */
+function renderRules(){
+  const colOpts=A.columns.map(c=>`<option value="${c.col}">${c.col} (${c.type})</option>`).join('');
+  document.getElementById('tab-rules').innerHTML=`
+    <div class="sec-lbl mb1">Define Custom Validation Rules</div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-bottom:1.25rem">Run domain-specific rules against your dataset beyond the default statistical checks.</div>
+    <div class="rule-form mb1">
+      <div class="g3" style="gap:.75rem;margin-bottom:.75rem">
+        <div><label>Column</label><select id="rule-col" style="width:100%">${colOpts}</select></div>
+        <div><label>Rule Type</label>
+          <select id="rule-type" style="width:100%" onchange="updateRuleInputs()">
+            <option value="not_null">Not null / not empty</option>
+            <option value="min">Minimum value ≥</option>
+            <option value="max">Maximum value ≤</option>
+            <option value="range">Value in range [min, max]</option>
+            <option value="one_of">Value must be one of (comma-separated)</option>
+            <option value="regex">Matches regex pattern</option>
+            <option value="unique">All values unique</option>
+          </select>
+        </div>
+        <div id="rule-inputs-wrap"><label>Parameter(s)</label><input id="rule-p1" placeholder="—" style="width:100%"></div>
+      </div>
+      <button class="btn-action" onclick="runRule()">▶ Run Rule</button>
+      <div id="rule-result"></div>
+    </div>
+    <div class="card" id="rule-history-card" style="display:none">
+      <div class="card-hdr"><span class="card-title">Rule Run History</span><button class="btn-link" onclick="clearRuleHistory()">Clear</button></div>
+      <div class="card-body" id="rule-history"></div>
+    </div>`;
+}
+let ruleHistory=[];
+function updateRuleInputs(){
+  const t=document.getElementById('rule-type').value;
+  const wrap=document.getElementById('rule-inputs-wrap');
+  const labels={not_null:'(no parameter needed)',min:'Min value',max:'Max value',range:'Min, Max (e.g. 0, 100)',one_of:'Values (e.g. M, F, N/A)',regex:'Pattern (e.g. ^\\d{4}$)',unique:'(no parameter needed)'};
+  wrap.innerHTML=`<label>Parameter(s)</label><input id="rule-p1" placeholder="${labels[t]||'—'}" style="width:100%" ${['not_null','unique'].includes(t)?'disabled':''}>`;
+}
+function runRule(){
+  const col=document.getElementById('rule-col').value;
+  const type=document.getElementById('rule-type').value;
+  const p1=document.getElementById('rule-p1')?.value||'';
+  const vals=D.rows.map(r=>r[col]);
+  let passes=0,fails=0,failExamples=[];
+  vals.forEach(v=>{
+    let ok=true;
+    if(type==='not_null')ok=!isMiss(v);
+    else if(type==='min')ok=!isNaN(Number(v))&&Number(v)>=Number(p1);
+    else if(type==='max')ok=!isNaN(Number(v))&&Number(v)<=Number(p1);
+    else if(type==='range'){const[mn,mx]=p1.split(',').map(Number);ok=!isNaN(Number(v))&&Number(v)>=mn&&Number(v)<=mx;}
+    else if(type==='one_of'){const allowed=p1.split(',').map(s=>s.trim().toLowerCase());ok=allowed.includes(String(v).trim().toLowerCase());}
+    else if(type==='regex'){try{ok=new RegExp(p1).test(String(v));}catch{ok=false;}}
+    else if(type==='unique')ok=true;
+    if(ok)passes++;else{fails++;if(failExamples.length<3)failExamples.push(v);}
+  });
+  if(type==='unique'){const us=new Set(vals.filter(v=>!isMiss(v)));fails=vals.length-us.size;passes=us.size;}
+  const pct=((passes/(passes+fails))*100).toFixed(1);
+  const passed=fails===0;
+  const result={col,type,p1,passes,fails,pct,failExamples,passed};
+  ruleHistory.unshift(result);
+  document.getElementById('rule-result').innerHTML=`<div class="rule-result ${passed?'rule-pass':'rule-fail'}">${passed?'✓ PASS':'✗ FAIL'} — ${passes.toLocaleString()} passed, ${fails.toLocaleString()} failed (${pct}% pass rate)${failExamples.length?` · Examples: ${failExamples.map(v=>`"${v}"`).join(', ')}`:''}</div>`;
+  const hc=document.getElementById('rule-history-card');hc.style.display='block';
+  document.getElementById('rule-history').innerHTML=ruleHistory.slice(0,10).map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #f0ece6;font-size:11px"><span style="font-family:var(--font-mono);color:var(--ink-2)">${r.col} · ${r.type}${r.p1?' ('+r.p1+')':''}</span><span style="font-family:var(--font-mono);font-weight:500;color:${r.passed?'#16a34a':'#dc2626'}">${r.passed?'✓ PASS':'✗ FAIL'} ${r.pct}%</span></div>`).join('');
+}
+function clearRuleHistory(){ruleHistory=[];document.getElementById('rule-history-card').style.display='none';}
+
+/* ══════════ SCHEMA DRIFT ══════════ */
+function renderDrift(){
+  document.getElementById('tab-drift').innerHTML=`
+    <div class="sec-lbl mb1">Schema Drift Detection</div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-bottom:1.25rem">Compare this dataset's schema against a second CSV to detect structural changes.</div>
+    <div class="drift-upload" onclick="document.getElementById('drift-input').click()">
+      <div style="font-size:20px;margin-bottom:.5rem">📂</div>
+      <div style="font-family:var(--font-serif);font-size:18px;font-weight:400;color:var(--ink);margin-bottom:.3rem">Upload comparison CSV</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-3)">Select a second CSV to compare schema and statistics</div>
+      <input type="file" id="drift-input" accept=".csv" style="display:none" onchange="processDrift(event)">
+    </div>
+    <div id="drift-results" style="margin-top:1.25rem"></div>`;
+}
+
+function processDrift(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const{headers:h2,rows:r2}=parseCSV(ev.target.result);
+    if(!h2.length)return;
+    const a2=analyzeDataset(h2,r2);
+    const h1=D.headers;
+    const added=h2.filter(h=>!h1.includes(h));
+    const removed=h1.filter(h=>!h2.includes(h));
+    const common=h1.filter(h=>h2.includes(h));
+    const changes=[];
+    common.forEach(col=>{
+      const c1=A.columns.find(c=>c.col===col);const c2=a2.columns.find(c=>c.col===col);if(!c1||!c2)return;
+      const diffs=[];
+      if(c1.type!==c2.type)diffs.push(`type: ${c1.type} → ${c2.type}`);
+      const mDiff=Math.abs(c1.missingPct-c2.missingPct);
+      if(mDiff>5)diffs.push(`missing: ${c1.missingPct.toFixed(1)}% → ${c2.missingPct.toFixed(1)}%`);
+      if(diffs.length)changes.push({col,diffs});
+    });
+    let html=`<div class="card"><div class="card-hdr"><span class="card-title">Drift Report — ${D.fileName} vs ${file.name}</span></div><div class="card-body">`;
+    html+=`<div class="g3 mb15">`;
+    html+=`<div class="mstat"><div class="msl">Added Columns</div><div class="msv" style="color:#16a34a">${added.length}</div></div>`;
+    html+=`<div class="mstat"><div class="msl">Removed Columns</div><div class="msv" style="color:#dc2626">${removed.length}</div></div>`;
+    html+=`<div class="mstat"><div class="msl">Changed Columns</div><div class="msv" style="color:var(--amber)">${changes.length}</div></div>`;
+    html+=`</div>`;
+    const rows=[];
+    added.forEach(col=>rows.push({col,status:'added',detail:'New column'}));
+    removed.forEach(col=>rows.push({col,status:'removed',detail:'Column no longer exists'}));
+    changes.forEach(({col,diffs})=>rows.push({col,status:'changed',detail:diffs.join(' · ')}));
+    common.filter(col=>!changes.find(c=>c.col===col)).forEach(col=>rows.push({col,status:'ok',detail:'No changes detected'}));
+    html+=rows.map(r=>`<div class="diff-row"><span class="diff-col">${r.col}</span><span class="diff-chip diff-${r.status}">${r.status}</span><span style="font-size:11.5px;color:var(--ink-3);margin-left:.5rem">${r.detail}</span></div>`).join('');
+    html+=`</div></div>`;
+    document.getElementById('drift-results').innerHTML=html;
+  };
+  reader.readAsText(file);
+}
+
+/* ══════════ AI AGENT ══════════ */
+function renderAgent(){
+  const suggestions=['What does my DQS score mean?','Which columns need the most attention?','Is this data ready for ML?','Explain the missing values pattern','Generate a cleaning priority list','What could cause the outliers?'];
+  document.getElementById('tab-agent').innerHTML=`
+    <div class="sec-lbl mb1">AI Data Quality Agent</div>
+    <div class="chat-wrap">
+      <div class="chat-suggestions">${suggestions.map(s=>`<button class="sug-btn" onclick="sendMessage('${s}')">${s}</button>`).join('')}</div>
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="msg ai">👋 Hi! I'm your data quality analyst. I've read your dataset — ask me anything about it. I can explain scores, identify risks, prioritize fixes, or assess ML readiness.</div>
+      </div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask about your dataset…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+        <button class="btn-send" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>`;
+}
+
+function buildDataSummary(){
+  const{DQS,C,Co,V,U,columns,dupes}=A;
+  const{fileName,totalRows,headers}=D;
+  const issues=RC.slice(0,8).map(r=>`- ${r.col}: ${r.issue} [${r.impact} impact]`).join('\n');
+  const colSummary=columns.slice(0,15).map(c=>`${c.col}(${c.type},miss:${c.missingPct.toFixed(0)}%,outliers:${c.invalid})`).join(', ');
+  return`DATASET: ${fileName}, ${totalRows.toLocaleString()} rows, ${headers.length} cols\nDQS: ${DQS.toFixed(1)}/100 (C:${C.toFixed(0)} Co:${Co.toFixed(0)} V:${V.toFixed(0)} U:${U.toFixed(0)})\nCOLUMNS: ${colSummary}\nDUPLICATES: ~${dupes}\nTOP ISSUES:\n${issues||'None detected'}`;
+}
+
+async function sendMessage(text){
+  const input=document.getElementById('chat-input');
+  const msg=(text||input.value).trim();
+  if(!msg||aiThinking)return;
+  input.value='';aiThinking=true;
+  document.getElementById('send-btn').disabled=true;
+
+  const msgs=document.getElementById('chat-msgs');
+  msgs.innerHTML+=`<div class="msg user">${msg}</div>`;
+  const thinking=document.createElement('div');thinking.className='msg ai thinking';thinking.textContent='Thinking…';msgs.appendChild(thinking);
+  msgs.scrollTop=msgs.scrollHeight;
+
+  chatHistory.push({role:'user',content:msg});
+
+  try{
+    const systemPrompt=`You are a concise, expert data quality analyst assistant. You have analysed the user's dataset and here is the summary:\n\n${buildDataSummary()}\n\nAnswer questions about this specific dataset. Be direct, specific, and use plain English. Avoid repeating the full summary. Keep responses under 150 words unless a detailed breakdown is explicitly requested. Use bullet points only when listing 3+ items.`;
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:400,
+        system:systemPrompt,
+        messages:chatHistory.slice(-8)
+      })
+    });
+    const data=await response.json();
+    const reply=data.content?.map(b=>b.text||'').join('')||'Sorry, I could not generate a response.';
+    chatHistory.push({role:'assistant',content:reply});
+    thinking.className='msg ai';thinking.textContent=reply;
+  }catch(err){
+    thinking.className='msg ai';thinking.textContent='⚠ Could not connect to AI — check your network or API configuration.';
+  }
+  aiThinking=false;document.getElementById('send-btn').disabled=false;
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+/* ══════════ EXPORT REPORT ══════════ */
+function exportReport(){
+  if(!A)return;
+  const{DQS,C,Co,V,U,columns,dupes,totMiss,total,sampleSize}=A;
+  const{fileName,totalRows,headers}=D;
+  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>DQ Report — ${fileName}</title><style>body{font-family:'Instrument Serif',Georgia,serif;max-width:900px;margin:40px auto;color:#1a1612;padding:0 2rem}h1{font-size:2.5rem;letter-spacing:-.02em;margin-bottom:.25rem;font-weight:400}h2{font-size:1.1rem;letter-spacing:.12em;text-transform:uppercase;color:#9a9590;font-weight:400;margin:2rem 0 .75rem;border-bottom:1px solid #dbd6cf;padding-bottom:.4rem;font-family:'Geist Mono',monospace}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:1.5rem}.th{padding:.5rem .75rem;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9a9590;border-bottom:1px solid #dbd6cf;font-family:'Geist Mono',monospace}td{padding:.5rem .75rem;border-bottom:1px solid #f0ece6}.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-family:'Geist Mono',monospace;font-weight:600}.good{background:#dcfce7;color:#1a6641}.mod{background:#fef3c7;color:#b45309}.poor{background:#fee2e2;color:#991b1b}.score{font-size:5rem;line-height:1;font-weight:400;color:#1a1612}.meta{font-family:'Geist Mono',monospace;font-size:11px;color:#9a9590}</style></head><body>`;
+  html+=`<p class="meta">${date} · Generated by DQ·INTEL</p><h1>${DQS.toFixed(0)} <span style="font-size:1.5rem;color:#9a9590">/ 100</span></h1><p class="meta">Dataset: ${fileName} · ${totalRows.toLocaleString()} rows · ${headers.length} columns</p><span class="badge ${DQS>=80?'good':DQS>=60?'mod':'poor'}">${DQS>=80?'Good':DQS>=60?'Moderate':'Poor'}</span>`;
+  html+=`<h2>Dimension Scores</h2><table><tr class="th"><td>Dimension</td><td>Weight</td><td>Score</td><td>Meaning</td></tr>${[['Completeness',C,'30%','Missing values'],['Consistency',Co,'25%','Format issues'],['Validity',V,'25%','Outliers / rules'],['Uniqueness',U,'20%','Duplicates']].map(([l,s,w,d])=>`<tr><td>${l}</td><td class="meta">${w}</td><td style="font-weight:600;color:${sc(s)}">${s.toFixed(0)}</td><td style="color:#9a9590;font-size:12px">${d}</td></tr>`).join('')}</table>`;
+  html+=`<h2>Column Summary</h2><table><tr class="th"><td>Column</td><td>Type</td><td>Missing %</td><td>Outliers</td><td>Top Value</td></tr>${columns.map(c=>`<tr><td>${c.col}</td><td class="meta">${c.type}</td><td style="color:${mc(c.missingPct)}">${c.missingPct.toFixed(1)}%</td><td style="color:${c.invalid>0?'#d97706':'#9a9590'}">${c.invalid||'—'}</td><td class="meta">${c.topValues[0]?.[0]||'—'}</td></tr>`).join('')}</table>`;
+  if(RC.length){html+=`<h2>Recommendations (${RC.length})</h2><table><tr class="th"><td>Column</td><td>Issue</td><td>Impact</td><td>Strategy</td></tr>${RC.map(r=>`<tr><td style="font-weight:500">${r.col}</td><td style="color:#9a9590;font-size:12px">${r.issue}</td><td><span class="badge ${r.impact==='High'?'poor':r.impact==='Medium'?'mod':'good'}">${r.impact}</span></td><td style="font-size:12px">${r.strategy}</td></tr>`).join('')}</table>`;}
+  html+=`<p class="meta" style="margin-top:2rem;border-top:1px solid #dbd6cf;padding-top:1rem">DQS = 0.30·C + 0.25·Co + 0.25·V + 0.20·U = ${DQS.toFixed(2)} · Analysis based on ${sampleSize.toLocaleString()} row sample</p></body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`DQ_Report_${fileName.replace('.csv','')}_${new Date().toISOString().slice(0,10)}.html`;a.click();
+}
+</script>
+</body>
+</html>
